@@ -132,6 +132,24 @@ nav button.sel{color:var(--gold)}
 .trait.on{color:var(--text)}
 .trait.gold{border-color:var(--gold);color:var(--gold)}
 .evoimg{width:min(230px,70vw);border-radius:18px;display:block;margin:12px auto 2px;box-shadow:0 0 44px rgba(232,179,75,.35)}
+#evoStage{position:relative;width:min(250px,74vw);margin:10px auto 2px}
+#evoStage img{width:100%;border-radius:18px;display:block}
+#evoOld{position:relative;z-index:2}
+#evoNew{position:absolute;inset:0;opacity:0;z-index:3}
+#evoStage.shake #evoOld{animation:evoshake .55s linear}
+@keyframes evoshake{0%,100%{transform:translate(0,0)}15%{transform:translate(-7px,2px)}30%{transform:translate(6px,-3px)}45%{transform:translate(-6px,-2px)}60%{transform:translate(7px,3px)}75%{transform:translate(-5px,1px)}90%{transform:translate(4px,-2px)}}
+#evoStage.flashout #evoOld{animation:evosil .5s ease forwards}
+@keyframes evosil{0%{filter:brightness(1)}40%{filter:brightness(2.6)}100%{filter:brightness(0) invert(0);opacity:0;transform:scale(1.12)}}
+#evoStage.reveal #evoNew{animation:evopop .65s cubic-bezier(.2,2.1,.4,1) forwards}
+@keyframes evopop{0%{opacity:0;transform:scale(.55)}60%{opacity:1;transform:scale(1.07)}100%{opacity:1;transform:scale(1)}}
+#evoFlash{position:absolute;inset:0;background:#fff;opacity:0;z-index:4;border-radius:18px;pointer-events:none}
+#evoStage.flashgo #evoFlash{animation:evoflash .5s ease}
+@keyframes evoflash{0%{opacity:0}25%{opacity:.95}100%{opacity:0}}
+.evospark{position:absolute;z-index:5;color:var(--gold);pointer-events:none;animation:evospark 1s ease-out forwards;text-shadow:0 0 12px rgba(232,179,75,.9)}
+@keyframes evospark{0%{opacity:0;transform:translate(0,0) scale(.4)}25%{opacity:1}100%{opacity:0;transform:translate(var(--dx),var(--dy)) scale(1.25)}}
+#evofx .nm,#evofx .hint,#evoClose{opacity:0;transition:opacity .35s ease}
+#evofx.done .nm,#evofx.done .hint,#evofx.done #evoClose{opacity:1}
+#evoCap{font-size:12px;letter-spacing:.4em;color:var(--gold);min-height:16px}
 .characard .stage{font-size:21px;color:var(--gold);margin-top:6px}
 .characard .stagecap{font-size:11px;color:var(--muted);letter-spacing:.3em}
 .characard .persona{font-size:13px;color:var(--muted);margin-top:6px;line-height:1.6}
@@ -235,8 +253,8 @@ nav button.sel{color:var(--gold)}
 </div></div>
 
 <div id="evofx"><div class="box">
-  <div class="cap">進化</div>
-  <div id="evoSvg"></div>
+  <div id="evoCap">進化</div>
+  <div id="evoStage"><img id="evoOld" alt="進化前"><img id="evoNew" alt="進化後"><div id="evoFlash"></div><div id="evoSparks"></div></div>
   <div class="nm serif" id="evoName"></div>
   <div class="hint" id="evoHint"></div>
   <button id="evoClose">すごい</button>
@@ -439,19 +457,52 @@ let evoPending=null;
 function checkStage(celebrate){
   const total=S.stampLog.length; const si=stageIdx(total);
   if(S.stageSeen===undefined)S.stageSeen=si;
-  if(si>S.stageSeen){ if(celebrate)evoPending=si; S.stageSeen=si; save(); }
+  if(si>S.stageSeen){ if(celebrate)evoPending={from:S.stageSeen,to:si}; S.stageSeen=si; save(); }
 }
-document.getElementById("evoClose").onclick=()=>{document.getElementById("evofx").classList.remove("show");render();};
+document.getElementById("evoClose").onclick=()=>{const fx=document.getElementById("evofx");fx.classList.remove("show","done");document.getElementById("evoStage").className="";render();};
+function fanfare(){
+  try{
+    const ctx=new (window.AudioContext||window.webkitAudioContext)();
+    const notes=[523.25,659.25,783.99,1046.5,783.99,1046.5,1318.5];
+    notes.forEach((f,i)=>{
+      const o=ctx.createOscillator(),g=ctx.createGain(); const t=ctx.currentTime+i*0.11;
+      o.type="square"; o.frequency.value=f;
+      g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(0.12,t+0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001,t+(i===notes.length-1?0.55:0.13));
+      o.connect(g); g.connect(ctx.destination); o.start(t); o.stop(t+0.6);
+    });
+  }catch(e){}
+}
 function showEvoIfPending(){
-  if(evoPending===null)return; const si=evoPending; evoPending=null;
-  const c=counts();
-  document.getElementById("evoSvg").innerHTML='<img class="evoimg" src="stage'+si+'.webp" alt="進化">';
+  if(!evoPending)return; const from=evoPending.from, si=evoPending.to; evoPending=null;
+  const fx=document.getElementById("evofx"), stage=document.getElementById("evoStage");
+  const oldImg=document.getElementById("evoOld"), newImg=document.getElementById("evoNew");
+  fx.classList.remove("done"); stage.className=""; 
+  oldImg.src="stage"+from+".webp"; newImg.src="stage"+si+".webp";
+  document.getElementById("evoCap").textContent="進化";
   document.getElementById("evoName").textContent=STAGES[si].name;
   document.getElementById("evoHint").textContent=STAGES[si].hint;
-  document.getElementById("evofx").classList.add("show");
-  if(navigator.vibrate)navigator.vibrate([40,60,40,60,80]);
+  document.getElementById("evoSparks").innerHTML="";
+  fx.classList.add("show");
+  if(navigator.vibrate)navigator.vibrate(30);
+  setTimeout(()=>{ stage.classList.add("shake"); if(navigator.vibrate)navigator.vibrate([20,40,20,40,20]); },650);
+  setTimeout(()=>{ stage.classList.add("flashgo"); },1250);
+  setTimeout(()=>{ stage.classList.add("flashout"); },1400);
+  setTimeout(()=>{
+    stage.classList.add("reveal"); fanfare();
+    if(navigator.vibrate)navigator.vibrate([50,60,120]);
+    const box=document.getElementById("evoSparks");
+    for(let i=0;i<16;i++){
+      const sp=document.createElement("span"); sp.className="evospark"; sp.textContent="✦";
+      const ang=Math.random()*Math.PI*2, dist=90+Math.random()*110;
+      sp.style.left=(45+Math.random()*10)+"%"; sp.style.top=(42+Math.random()*16)+"%";
+      sp.style.setProperty("--dx",Math.cos(ang)*dist+"px"); sp.style.setProperty("--dy",Math.sin(ang)*dist+"px");
+      sp.style.fontSize=(13+Math.random()*17)+"px"; sp.style.animationDelay=(Math.random()*0.25)+"s";
+      box.appendChild(sp);
+    }
+  },1750);
+  setTimeout(()=>{ fx.classList.add("done"); },2150);
 }
-
 /* 描画 */
 const $=id=>document.getElementById(id);
 function radarSVG(override){
