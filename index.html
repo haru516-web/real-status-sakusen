@@ -125,6 +125,13 @@ nav button.sel{color:var(--gold)}
 #intro .core{color:var(--gold);font-size:16px;text-align:center;margin:14px 0}
 #intro button{background:var(--gold);color:#1a1405;border:none;border-radius:999px;padding:13px 36px;font-size:16px;font-weight:700;cursor:pointer}
 .characard{text-align:center;padding:18px 16px 14px;cursor:pointer}
+.charaimg{width:min(250px,78vw);border-radius:18px;display:block;margin:4px auto 2px;
+  box-shadow:0 8px 32px rgba(0,0,0,.5);animation:fade .35s ease}
+.traits{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:9px}
+.trait{font-size:11px;border:1.5px solid var(--line);color:var(--muted);border-radius:999px;padding:4px 10px}
+.trait.on{color:var(--text)}
+.trait.gold{border-color:var(--gold);color:var(--gold)}
+.evoimg{width:min(230px,70vw);border-radius:18px;display:block;margin:12px auto 2px;box-shadow:0 0 44px rgba(232,179,75,.35)}
 .characard .stage{font-size:21px;color:var(--gold);margin-top:6px}
 .characard .stagecap{font-size:11px;color:var(--muted);letter-spacing:.3em}
 .characard .persona{font-size:13px;color:var(--muted);margin-top:6px;line-height:1.6}
@@ -157,6 +164,7 @@ nav button.sel{color:var(--gold)}
       <div id="charaSvg"></div>
       <div class="stage serif" id="charaStage">モブ</div>
       <div class="persona" id="charaPersona"></div>
+      <div class="traits" id="charaTraits"></div>
       <div class="nextbar"><i id="charaNextBar" style="width:0%"></i></div>
       <div class="nextcap" id="charaNextCap"></div>
     </div>
@@ -437,7 +445,7 @@ document.getElementById("evoClose").onclick=()=>{document.getElementById("evofx"
 function showEvoIfPending(){
   if(evoPending===null)return; const si=evoPending; evoPending=null;
   const c=counts();
-  document.getElementById("evoSvg").innerHTML=charaSVG(c,si);
+  document.getElementById("evoSvg").innerHTML='<img class="evoimg" src="stage'+si+'.webp" alt="進化">';
   document.getElementById("evoName").textContent=STAGES[si].name;
   document.getElementById("evoHint").textContent=STAGES[si].hint;
   document.getElementById("evofx").classList.add("show");
@@ -497,7 +505,7 @@ function render(){
   $("curTitleDate").textContent=cur?("取得："+new Date(curAt).toLocaleDateString("ja-JP")):"最初の作戦を完了しよう";
   /* キャラ */
   const si=stageIdx(st.total);
-  $("charaSvg").innerHTML=charaSVG(c,si);
+  $("charaSvg").innerHTML='<img class="charaimg" src="stage'+si+'.webp" alt="分身">';
   $("charaStage").textContent=STAGES[si].name;
   const dom=FIELDS.reduce((a,f)=>c[f.id]>c[a.id]?f:a,FIELDS[0]);
   const sorted=[...FIELDS].sort((a,b)=>c[b.id]-c[a.id]);
@@ -506,6 +514,8 @@ function render(){
   else if(c[sorted[0].id]>=Math.max(10,c[sorted[1].id]*3))persona="いまの個性：<b>"+sorted[0].name+"特化型</b>（偏りも個性）";
   else persona="いまの個性：<b>"+dom.name+"型</b>を中心に育成中";
   $("charaPersona").innerHTML=persona;
+  const traitNames={body:"筋力の証",study:"知恵の証",charm:"魅了の証",work:"仕事の証",money:"富の証",relation:"絆の証"};
+  $("charaTraits").innerHTML=FIELDS.filter(f=>c[f.id]>=10).map(f=>'<span class="trait '+(c[f.id]>=30?"gold":"on")+'" style="border-color:'+(c[f.id]>=30?"var(--gold)":f.color)+'">'+traitNames[f.id]+" Lv"+(c[f.id]>=30?2:1)+"</span>").join("");
   if(si<STAGES.length-1){
     const cur0=STAGES[si].at,nx=STAGES[si+1];
     $("charaNextBar").style.width=Math.round((st.total-cur0)/(nx.at-cur0)*100)+"%";
