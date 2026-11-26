@@ -474,7 +474,9 @@ function fanfare(){
   }catch(e){}
 }
 function showEvoIfPending(){
-  if(!evoPending)return; const from=evoPending.from, si=evoPending.to; evoPending=null;
+  if(!evoPending)return;
+  if(document.getElementById("titlefx").classList.contains("show"))return;
+  const from=evoPending.from, si=evoPending.to; evoPending=null;
   const fx=document.getElementById("evofx"), stage=document.getElementById("evoStage");
   const oldImg=document.getElementById("evoOld"), newImg=document.getElementById("evoNew");
   fx.classList.remove("done"); stage.className=""; 
@@ -632,7 +634,7 @@ function completeMission(id){
     o.type="sine";o.frequency.setValueAtTime(150,ctx.currentTime);o.frequency.exponentialRampToValueAtTime(55,ctx.currentTime+0.12);
     g.gain.setValueAtTime(0.25,ctx.currentTime);g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.16);
     o.connect(g);g.connect(ctx.destination);o.start();o.stop(ctx.currentTime+0.17);}catch(e){}
-  setTimeout(()=>{fx.classList.remove("show"); checkTitles(true); checkStage(true); render(); animateRadar(beforeCounts); if(!unlockQueue.length)showEvoIfPending();},520);
+  setTimeout(()=>{fx.classList.remove("show"); checkTitles(true); checkStage(true); render(); animateRadar(beforeCounts); if(!unlockQueue.length&&!document.getElementById("titlefx").classList.contains("show"))showEvoIfPending();},520);
 }
 $("charaCard").onclick=()=>{$("radarCard").scrollIntoView({behavior:"smooth",block:"center"});};
 /* タブ */
@@ -647,6 +649,7 @@ $("resetBtn").onclick=()=>{if(confirm("全データを初期化します。本�
 $("introOk").onclick=()=>{S.introSeen=true;save();$("intro").classList.remove("show");
   document.querySelector('nav button[data-v="v-plan"]').click();};
 /* 初期化 */
+STAGES.forEach((s,i)=>{const im=new Image(); im.src="stage"+i+".webp";});
 $("mDate").value=todayStr();
 renderFieldChips();
 checkTitles(false);
