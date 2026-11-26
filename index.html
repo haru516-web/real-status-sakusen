@@ -124,6 +124,21 @@ nav button.sel{color:var(--gold)}
 #intro p b{color:var(--text)}
 #intro .core{color:var(--gold);font-size:16px;text-align:center;margin:14px 0}
 #intro button{background:var(--gold);color:#1a1405;border:none;border-radius:999px;padding:13px 36px;font-size:16px;font-weight:700;cursor:pointer}
+.characard{text-align:center;padding:18px 16px 14px;cursor:pointer}
+.characard .stage{font-size:21px;color:var(--gold);margin-top:6px}
+.characard .stagecap{font-size:11px;color:var(--muted);letter-spacing:.3em}
+.characard .persona{font-size:13px;color:var(--muted);margin-top:6px;line-height:1.6}
+.characard .persona b{color:var(--text)}
+.nextbar{height:8px;background:var(--bg2);border-radius:99px;margin:10px 4px 4px;overflow:hidden}
+.nextbar i{display:block;height:100%;background:var(--gold);border-radius:99px;transition:width .6s ease}
+.nextcap{font-size:11px;color:var(--muted)}
+#evofx{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:92;background:rgba(4,5,12,.88);padding:24px}
+#evofx.show{display:flex}
+#evofx .box{text-align:center;animation:fade .3s ease;max-width:340px}
+#evofx .cap{font-size:12px;letter-spacing:.4em;color:var(--gold)}
+#evofx .nm{font-size:26px;color:var(--gold);margin-top:10px}
+#evofx .hint{font-size:13px;color:var(--muted);margin-top:8px;line-height:1.6}
+#evofx button{margin-top:20px;background:var(--gold);color:#1a1405;border:none;border-radius:999px;padding:12px 34px;font-size:15px;font-weight:700;cursor:pointer}
 .danger{margin-top:26px;text-align:center}
 .danger button{background:none;border:1px solid #5a3a3a;color:#ff8a84;border-radius:10px;padding:9px 18px;font-size:12px;cursor:pointer}
 </style>
@@ -137,14 +152,22 @@ nav button.sel{color:var(--gold)}
 
   <!-- ステータス -->
   <section class="view active" id="v-status">
+    <div class="card characard" id="charaCard" title="タップでステータス詳細へ">
+      <div class="stagecap">あなたの分身</div>
+      <div id="charaSvg"></div>
+      <div class="stage serif" id="charaStage">モブ</div>
+      <div class="persona" id="charaPersona"></div>
+      <div class="nextbar"><i id="charaNextBar" style="width:0%"></i></div>
+      <div class="nextcap" id="charaNextCap"></div>
+    </div>
     <div class="card bigtitle">
       <div class="label">現在の称号</div>
       <div class="name serif" id="curTitle">無名の作戦家</div>
       <div class="date" id="curTitleDate">最初の作戦を完了しよう</div>
     </div>
-    <div class="card">
+    <div class="card" id="radarCard">
       <h2>ステータス（自己申告制・盛れない数字だけが育つ）</h2>
-      <div class="radarwrap"><svg id="radar" width="250" height="230" viewBox="0 0 250 230"></svg></div>
+      <div class="radarwrap"><svg id="radar" width="250" height="230" viewBox="0 0 250 230"></svg></div><div style="text-align:center;font-size:11px;color:var(--muted)">金＝いま ／ 破線＝7日前</div>
       <div class="params" id="params"></div>
     </div>
     <div class="card">
@@ -203,6 +226,14 @@ nav button.sel{color:var(--gold)}
   <button id="tfClose">受け取る</button>
 </div></div>
 
+<div id="evofx"><div class="box">
+  <div class="cap">進化</div>
+  <div id="evoSvg"></div>
+  <div class="nm serif" id="evoName"></div>
+  <div class="hint" id="evoHint"></div>
+  <button id="evoClose">すごい</button>
+</div></div>
+
 <div id="intro"><div class="box">
   <h2 class="serif">作戦手帳</h2>
   <p>計画を立てて、やったらスタンプ。称号が溜まって、自分のステータスが育つ、<b>本気の人生計画表</b>。</p>
@@ -259,7 +290,7 @@ const KEY="realStatusV1";
 let S=load();
 function load(){
   try{const s=JSON.parse(localStorage.getItem(KEY)); if(s&&s.missions) return s;}catch(e){}
-  return {directions:{},missions:[],stampLog:[],unlocked:{},totalCreated:0,introSeen:false};
+  return {directions:{},missions:[],stampLog:[],unlocked:{},totalCreated:0,introSeen:false,stageSeen:0};
 }
 function save(){localStorage.setItem(KEY,JSON.stringify(S));}
 const todayStr=(d=new Date())=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
@@ -329,21 +360,116 @@ function showNextUnlock(){
 }
 document.getElementById("tfClose").onclick=()=>{
   document.getElementById("titlefx").classList.remove("show");
-  if(unlockQueue.length)setTimeout(showNextUnlock,250); else render();
+  if(unlockQueue.length)setTimeout(showNextUnlock,250); else {render(); showEvoIfPending();}
 };
+
+/* キャラ育成：モブ→主人公 */
+const STAGES=[
+ {at:0,name:"モブ",hint:"まだ大衆の一人。方向を選ぶところから始まる。"},
+ {at:5,name:"脱モブ",hint:"色がつき始めた。自分の作戦で動き出した証拠。"},
+ {at:20,name:"見習い作戦家",hint:"姿がはっきりしてきた。続ける力がついてきた。"},
+ {at:50,name:"作戦家",hint:"もうモブには見えない。オーラが出てきた。"},
+ {at:120,name:"熟練作戦家",hint:"纏う空気が違う。偏りも個性として光る。"},
+ {at:300,name:"自分の人生の主人公",hint:"大衆の側から、物語の中心へ。"},
+];
+function stageIdx(total){let s=0;STAGES.forEach((x,i)=>{if(total>=x.at)s=i;});return s;}
+function charaSVG(c,si){
+  const total=Object.values(c).reduce((a,b)=>a+b,0);
+  const bodyCols=["#7d8496","#98a0b8","#6f7fd6","#5a6fe0","#4f56c9","#d99a26"];
+  const skinCols=["#c4c7d1","#e0b98f","#f2c9a4","#f2c9a4","#f2c9a4","#f2c9a4"];
+  const body=bodyCols[si], skin=skinCols[si];
+  const dom=FIELDS.reduce((a,f)=>c[f.id]>c[a.id]?f:a,FIELDS[0]);
+  let s='<svg width="210" height="200" viewBox="0 0 220 205">';
+  if(si>=3)s+='<circle cx="110" cy="108" r="80" fill="'+(si>=5?"rgba(232,179,75,.20)":"rgba(120,140,255,.13)")+'"/>';
+  if(si>=5)s+='<circle cx="110" cy="108" r="66" fill="none" stroke="#e8b34b" stroke-width="2" stroke-dasharray="5 6" opacity=".7"/>';
+  /* 人間関係：仲間 */
+  if(c.relation>=10)s+='<g><circle cx="34" cy="152" r="15" fill="#4fd8c7"/><circle cx="29" cy="150" r="2.2" fill="#203"/><circle cx="39" cy="150" r="2.2" fill="#203"/><path d="M29 157 Q34 161 39 157" stroke="#203" fill="none" stroke-width="1.6"/></g>';
+  if(c.relation>=20)s+='<g><circle cx="186" cy="152" r="15" fill="#ff6ee7"/><circle cx="181" cy="150" r="2.2" fill="#203"/><circle cx="191" cy="150" r="2.2" fill="#203"/><path d="M181 157 Q186 161 191 157" stroke="#203" fill="none" stroke-width="1.6"/></g>';
+  if(c.relation>=30)s+='<g><circle cx="110" cy="186" r="13" fill="#4f7cff"/><circle cx="106" cy="184" r="2" fill="#fff"/><circle cx="114" cy="184" r="2" fill="#fff"/></g>';
+  /* マント（熟練〜） */
+  if(si>=4)s+='<path d="M62 108 Q110 84 158 108 L168 188 Q110 172 52 188 Z" fill="#b03a48" opacity=".9"/>';
+  /* 体 */
+  const armR=c.body>=30?17:12;
+  s+='<ellipse cx="58" cy="132" rx="'+armR+'" ry="'+(armR+7)+'" fill="'+body+'"/>';
+  s+='<ellipse cx="162" cy="132" rx="'+armR+'" ry="'+(armR+7)+'" fill="'+body+'"/>';
+  s+='<ellipse cx="110" cy="128" rx="52" ry="57" fill="'+body+'"/>';
+  /* 仕事：ネクタイ */
+  if(c.work>=10)s+='<polygon points="110,102 103,112 110,138 117,112" fill="#d8455a"/><circle cx="110" cy="103" r="5" fill="#d8455a"/>';
+  /* 金：コイン */
+  if(c.money>=10)s+='<g><circle cx="172" cy="182" r="12" fill="#ffd257" stroke="#d99a26" stroke-width="2"/><text x="172" y="187" font-size="12" text-anchor="middle" fill="#7a5510">金</text></g>';
+  if(c.money>=30)s+='<g><circle cx="150" cy="188" r="10" fill="#ffd257" stroke="#d99a26" stroke-width="2"/><circle cx="160" cy="172" r="10" fill="#ffe082" stroke="#d99a26" stroke-width="2"/></g>';
+  /* 知力：本 */
+  if(c.study>=30)s+='<g><rect x="18" y="160" width="30" height="24" rx="3" fill="#4f7cff"/><rect x="22" y="164" width="22" height="3" fill="#cfe0ff"/><rect x="22" y="170" width="22" height="3" fill="#cfe0ff"/></g>';
+  /* 仕事：カバン */
+  if(c.work>=30)s+='<g><rect x="176" y="158" width="32" height="24" rx="4" fill="#8a5a2b"/><rect x="186" y="150" width="12" height="9" fill="none" stroke="#8a5a2b" stroke-width="3"/></g>';
+  /* 頭 */
+  s+='<circle cx="110" cy="60" r="34" fill="'+skin+'"/>';
+  /* 髪 or 王冠 */
+  if(si>=5){s+='<g fill="#e8b34b"><polygon points="84,38 92,18 102,34"/><polygon points="102,32 110,12 118,32"/><polygon points="118,34 128,18 136,38"/><rect x="84" y="36" width="52" height="8" rx="3"/></g>';}
+  else if(si===0){s+='<path d="M76 58 Q78 30 110 29 Q142 30 144 58 Q128 44 110 45 Q92 44 76 58Z" fill="#6d7284"/>';}
+  else if(si===1){s+='<path d="M76 58 Q78 28 110 27 Q142 28 144 58 Q126 42 110 43 Q94 42 76 58Z" fill="#5a4632"/>';}
+  else{s+='<path d="M76 60 Q74 24 98 26 L94 14 L106 24 L112 10 L120 24 L132 14 L130 27 Q146 30 144 60 Q128 40 110 42 Q92 40 76 60Z" fill="#4a3826"/>';}
+  /* 体力：ハチマキ */
+  if(c.body>=10)s+='<path d="M77 52 Q110 40 143 52 L143 43 Q110 31 77 43Z" fill="#57d977"/><polygon points="143,46 156,40 152,52 158,56 144,56" fill="#57d977"/>';
+  /* 顔 */
+  if(si===0){s+='<circle cx="98" cy="62" r="2.6" fill="#555a6a"/><circle cx="122" cy="62" r="2.6" fill="#555a6a"/><line x1="102" y1="76" x2="118" y2="76" stroke="#555a6a" stroke-width="2"/>';}
+  else if(si===1){s+='<circle cx="98" cy="62" r="3" fill="#333"/><circle cx="122" cy="62" r="3" fill="#333"/><path d="M102 75 Q110 80 118 75" stroke="#333" fill="none" stroke-width="2"/>';}
+  else{s+='<ellipse cx="98" cy="62" rx="4.6" ry="6" fill="#26262e"/><ellipse cx="122" cy="62" rx="4.6" ry="6" fill="#26262e"/><circle cx="99.5" cy="59.5" r="1.7" fill="#fff"/><circle cx="123.5" cy="59.5" r="1.7" fill="#fff"/><path d="M100 76 Q110 84 120 76" stroke="#26262e" fill="none" stroke-width="2.4" stroke-linecap="round"/>';
+    if(si>=3)s+='<path d="M90 50 L105 47 M115 47 L130 50" stroke="#26262e" stroke-width="2.4" stroke-linecap="round"/>';}
+  if(si>=2)s+='<ellipse cx="84" cy="72" rx="6" ry="3.4" fill="#ff9db0" opacity=".55"/><ellipse cx="136" cy="72" rx="6" ry="3.4" fill="#ff9db0" opacity=".55"/>';
+  /* 知力：メガネ */
+  if(c.study>=10)s+='<g stroke="#2c2c34" stroke-width="2.6" fill="none"><circle cx="98" cy="62" r="11"/><circle cx="122" cy="62" r="11"/><line x1="109" y1="62" x2="111" y2="62"/><line x1="87" y1="60" x2="78" y2="56"/><line x1="133" y1="60" x2="142" y2="56"/></g>';
+  /* 魅力：キラキラと花 */
+  if(c.charm>=10)s+='<g fill="#ffd7f4"><text x="52" y="42" font-size="17">✦</text><text x="156" y="30" font-size="13">✦</text><text x="164" y="86" font-size="15">✦</text></g>';
+  if(c.charm>=30)s+='<g><circle cx="72" cy="34" r="5" fill="#ff6ee7"/><circle cx="82" cy="30" r="5" fill="#ff6ee7"/><circle cx="77" cy="24" r="5" fill="#ff8ff0"/><circle cx="77" cy="31" r="3.4" fill="#ffd257"/></g>';
+  /* 主人公のオーラ粒 */
+  if(si>=4)s+='<g fill="#e8b34b"><text x="38" y="96" font-size="13">✦</text><text x="172" y="110" font-size="13">✦</text></g>';
+  s+="</svg>";
+  return s;
+}
+let evoPending=null;
+function checkStage(celebrate){
+  const total=S.stampLog.length; const si=stageIdx(total);
+  if(S.stageSeen===undefined)S.stageSeen=si;
+  if(si>S.stageSeen){ if(celebrate)evoPending=si; S.stageSeen=si; save(); }
+}
+document.getElementById("evoClose").onclick=()=>{document.getElementById("evofx").classList.remove("show");render();};
+function showEvoIfPending(){
+  if(evoPending===null)return; const si=evoPending; evoPending=null;
+  const c=counts();
+  document.getElementById("evoSvg").innerHTML=charaSVG(c,si);
+  document.getElementById("evoName").textContent=STAGES[si].name;
+  document.getElementById("evoHint").textContent=STAGES[si].hint;
+  document.getElementById("evofx").classList.add("show");
+  if(navigator.vibrate)navigator.vibrate([40,60,40,60,80]);
+}
+
 /* 描画 */
 const $=id=>document.getElementById(id);
-function radarSVG(){
-  const c=counts(); const cx=125,cy=112,R=82;
-  const max=Math.max(10,...Object.values(c));
+function radarSVG(override){
+  const c=override||counts(); const cx=125,cy=112,R=82;
+  const weekAgo=Date.now()-7*86400000; const gc={}; FIELDS.forEach(f=>gc[f.id]=0);
+  S.stampLog.forEach(l=>{if(l.at<=weekAgo&&gc[l.field]!==undefined)gc[l.field]++;});
+  const max=Math.max(10,...Object.values(counts()),...Object.values(gc));
   const pt=(i,v)=>{const a=-Math.PI/2+i*Math.PI/3;const r=R*v;return [cx+r*Math.cos(a),cy+r*Math.sin(a)];};
   let s="";
   [0.33,0.66,1].forEach(k=>{s+='<polygon points="'+FIELDS.map((f,i)=>pt(i,k).join(",")).join(" ")+'" fill="none" stroke="#2a3160" stroke-width="1"/>';});
   FIELDS.forEach((f,i)=>{const[x,y]=pt(i,1);s+='<line x1="'+cx+'" y1="'+cy+'" x2="'+x+'" y2="'+y+'" stroke="#2a3160"/>';});
+  if(S.stampLog.some(l=>l.at<=weekAgo))
+    s+='<polygon points="'+FIELDS.map((f,i)=>pt(i,Math.max(0.02,gc[f.id]/max)).join(",")).join(" ")+'" fill="none" stroke="#9aa3c7" stroke-width="1.4" stroke-dasharray="4 4" opacity=".75"/>';
   s+='<polygon points="'+FIELDS.map((f,i)=>pt(i,Math.max(0.03,c[f.id]/max)).join(",")).join(" ")+'" fill="rgba(232,179,75,.28)" stroke="#e8b34b" stroke-width="2"/>';
   FIELDS.forEach((f,i)=>{const[x,y]=pt(i,Math.max(0.03,c[f.id]/max));s+='<circle cx="'+x+'" cy="'+y+'" r="3.5" fill="'+f.color+'"/>';});
   FIELDS.forEach((f,i)=>{const[x,y]=pt(i,1.22);s+='<text x="'+x+'" y="'+(y+4)+'" font-size="12" fill="#9aa3c7" text-anchor="middle">'+f.name+'</text>';});
   $("radar").innerHTML=s;
+}
+function animateRadar(from){
+  const to=counts(); const t0=performance.now();
+  (function step(t){
+    const k=Math.min(1,(t-t0)/550); const e=1-Math.pow(1-k,3); const cur={};
+    FIELDS.forEach(f=>cur[f.id]=from[f.id]+(to[f.id]-from[f.id])*e);
+    radarSVG(cur);
+    if(k<1)requestAnimationFrame(step); else radarSVG();
+  })(t0);
 }
 function missionEl(m,showStamp){
   const f=F(m.field); const div=document.createElement("div");
@@ -369,6 +495,22 @@ function render(){
   for(const t of TITLES){if(S.unlocked[t.id]&&S.unlocked[t.id]>=curAt){cur=t;curAt=S.unlocked[t.id];}}
   $("curTitle").textContent=cur?cur.name:"無名の作戦家";
   $("curTitleDate").textContent=cur?("取得："+new Date(curAt).toLocaleDateString("ja-JP")):"最初の作戦を完了しよう";
+  /* キャラ */
+  const si=stageIdx(st.total);
+  $("charaSvg").innerHTML=charaSVG(c,si);
+  $("charaStage").textContent=STAGES[si].name;
+  const dom=FIELDS.reduce((a,f)=>c[f.id]>c[a.id]?f:a,FIELDS[0]);
+  const sorted=[...FIELDS].sort((a,b)=>c[b.id]-c[a.id]);
+  let persona;
+  if(st.total===0)persona="まだモブ。方向を選ぶところから。";
+  else if(c[sorted[0].id]>=Math.max(10,c[sorted[1].id]*3))persona="いまの個性：<b>"+sorted[0].name+"特化型</b>（偏りも個性）";
+  else persona="いまの個性：<b>"+dom.name+"型</b>を中心に育成中";
+  $("charaPersona").innerHTML=persona;
+  if(si<STAGES.length-1){
+    const cur0=STAGES[si].at,nx=STAGES[si+1];
+    $("charaNextBar").style.width=Math.round((st.total-cur0)/(nx.at-cur0)*100)+"%";
+    $("charaNextCap").textContent="次の進化「"+nx.name+"」まで あと "+(nx.at-st.total)+" 回";
+  }else{$("charaNextBar").style.width="100%";$("charaNextCap").textContent="最終形態。ここから先は伝説を作る段階。";}
   radarSVG();
   $("params").innerHTML=FIELDS.map(f=>'<div class="param"><div class="kanji" style="color:'+f.color+'">'+f.kanji+" "+f.name+'</div><div class="val">'+c[f.id]+'</div><div class="lv">Lv '+Math.floor(Math.sqrt(c[f.id]))+"</div></div>").join("");
   const ts=todayStr();
@@ -417,6 +559,7 @@ $("mAdd").onclick=()=>{
 };
 function completeMission(id){
   const m=S.missions.find(x=>x.id===id); if(!m||m.doneAt)return;
+  const beforeCounts=counts();
   m.doneAt=Date.now();
   S.stampLog.push({missionId:id,field:m.field,at:Date.now(),date:todayStr()});
   save();
@@ -428,8 +571,9 @@ function completeMission(id){
     o.type="sine";o.frequency.setValueAtTime(150,ctx.currentTime);o.frequency.exponentialRampToValueAtTime(55,ctx.currentTime+0.12);
     g.gain.setValueAtTime(0.25,ctx.currentTime);g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.16);
     o.connect(g);g.connect(ctx.destination);o.start();o.stop(ctx.currentTime+0.17);}catch(e){}
-  setTimeout(()=>{fx.classList.remove("show"); checkTitles(true); render();},520);
+  setTimeout(()=>{fx.classList.remove("show"); checkTitles(true); checkStage(true); render(); animateRadar(beforeCounts); if(!unlockQueue.length)showEvoIfPending();},520);
 }
+$("charaCard").onclick=()=>{$("radarCard").scrollIntoView({behavior:"smooth",block:"center"});};
 /* タブ */
 document.querySelectorAll("nav button").forEach(b=>{
   b.onclick=()=>{
@@ -445,6 +589,7 @@ $("introOk").onclick=()=>{S.introSeen=true;save();$("intro").classList.remove("s
 $("mDate").value=todayStr();
 renderFieldChips();
 checkTitles(false);
+checkStage(false);
 render();
 if(!S.introSeen)$("intro").classList.add("show");
 </script>
