@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0b0e1a">
+<title>作戦手帳｜リアルステータス</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%230b0e1a'/><circle cx='50' cy='50' r='30' fill='none' stroke='%23e8b34b' stroke-width='6'/><text x='50' y='63' font-size='34' text-anchor='middle' fill='%23e8b34b'>作</text></svg>">
+<style>
+:root{
+  --bg:#0b0e1a; --bg2:#10142a; --card:#161b36; --card2:#1c2242;
+  --line:#2a3160; --text:#eef0ff; --muted:#9aa3c7; --gold:#e8b34b;
+  --red:#ff5f57; --silver:#c9cede; --rainbow:linear-gradient(90deg,#ff5f57,#e8b34b,#57d977,#4f7cff,#a78bfa);
+}
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--text);
+  font-family:"Hiragino Kaku Gothic ProN","Hiragino Sans","Noto Sans CJK JP",sans-serif;}
+h1,h2,.serif{font-family:"Hiragino Mincho ProN","Noto Serif CJK JP",serif;}
+#app{max-width:560px;margin:0 auto;padding:0 16px 110px;min-height:100vh;
+  background:radial-gradient(120% 60% at 50% 0%,#141a3d 0%,var(--bg) 60%);}
+header{padding:22px 4px 10px;display:flex;align-items:baseline;justify-content:space-between}
+header h1{font-size:22px;margin:0;letter-spacing:.12em}
+header .sub{font-size:11px;color:var(--muted);letter-spacing:.2em}
+.streak{font-size:12px;color:var(--gold);border:1px solid var(--gold);border-radius:999px;padding:4px 10px;white-space:nowrap}
+.view{display:none}
+.view.active{display:block;animation:fade .18s ease}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin:12px 0}
+.card h2{font-size:14px;margin:0 0 10px;letter-spacing:.15em;color:var(--muted);font-weight:600}
+.bigtitle{text-align:center;padding:20px 16px}
+.bigtitle .label{font-size:11px;color:var(--muted);letter-spacing:.3em}
+.bigtitle .name{font-size:24px;margin:8px 0 4px;color:var(--gold)}
+.bigtitle .date{font-size:11px;color:var(--muted)}
+.radarwrap{display:flex;justify-content:center}
+.params{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:6px}
+.param{background:var(--card2);border-radius:12px;padding:10px 6px;text-align:center}
+.param .kanji{font-size:18px}
+.param .val{font-size:20px;font-weight:700;margin-top:2px;font-variant-numeric:tabular-nums}
+.param .lv{font-size:10px;color:var(--muted)}
+.mission{display:flex;align-items:center;gap:10px;background:var(--card2);border:1px solid var(--line);
+  border-radius:12px;padding:12px;margin:8px 0}
+.mission .f{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:15px;flex:none;border:2px solid}
+.mission .t{flex:1;font-size:15px;line-height:1.4;word-break:break-all}
+.mission .t small{display:block;color:var(--muted);font-size:11px}
+.mission.done{opacity:.55}
+.mission.done .t{text-decoration:line-through}
+.stampbtn{flex:none;background:var(--gold);color:#1a1405;border:none;font-weight:700;
+  border-radius:999px;padding:10px 16px;font-size:14px;cursor:pointer}
+.stampbtn:active{transform:scale(.94)}
+.delbtn{flex:none;background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;padding:6px}
+.done-mark{flex:none;width:40px;height:40px;border-radius:50%;border:2.5px solid var(--red);color:var(--red);
+  display:flex;align-items:center;justify-content:center;font-size:17px;transform:rotate(-12deg);font-weight:700}
+.addform{display:flex;flex-direction:column;gap:10px}
+.addform input[type=text],.addform input[type=date]{background:var(--bg2);border:1px solid var(--line);
+  color:var(--text);border-radius:10px;padding:12px;font-size:16px;width:100%}
+.fieldrow{display:flex;gap:6px;flex-wrap:wrap}
+.fieldchip{border:1.5px solid var(--line);background:var(--bg2);color:var(--muted);border-radius:999px;
+  padding:7px 12px;font-size:13px;cursor:pointer}
+.fieldchip.sel{color:var(--text);background:var(--card2)}
+.addbtn{background:var(--gold);color:#1a1405;border:none;border-radius:12px;padding:13px;
+  font-size:16px;font-weight:700;cursor:pointer}
+.addbtn:active{transform:scale(.98)}
+.secttl{font-size:12px;color:var(--muted);letter-spacing:.2em;margin:18px 0 4px}
+.empty{color:var(--muted);font-size:13px;text-align:center;padding:14px 0}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.title{background:var(--card);border:1.5px solid var(--line);border-radius:14px;padding:12px 8px;text-align:center;min-height:118px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px}
+.title .mark{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:19px;border:2.5px solid var(--silver);color:var(--silver);transform:rotate(-8deg)}
+.title .nm{font-size:12px;line-height:1.35;font-weight:600}
+.title .dt{font-size:10px;color:var(--muted)}
+.title.locked{opacity:.45}
+.title.locked .mark{border-color:var(--line);color:var(--muted);border-style:dashed}
+.title.locked .nm{color:var(--muted);font-weight:400;font-size:11px}
+.title.r-silver{border-color:var(--silver)} .title.r-silver .mark{border-color:var(--silver);color:var(--silver)}
+.title.r-gold{border-color:var(--gold)} .title.r-gold .mark{border-color:var(--gold);color:var(--gold)}
+.title.r-rainbow{border:2px solid transparent;background:linear-gradient(var(--card),var(--card)) padding-box,var(--rainbow) border-box}
+.title.r-rainbow .mark{border-color:#ff8ab5;color:#ff8ab5}
+.progress{font-size:13px;color:var(--muted);text-align:center;margin:8px 0 2px}
+.progress b{color:var(--gold);font-size:18px}
+.dirrow{margin:12px 0}
+.dirrow .head{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.dirrow .f{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:2px solid;font-size:14px}
+.dirrow .fname{font-size:14px;font-weight:600}
+.dirrow .cnt{margin-left:auto;font-size:12px;color:var(--muted)}
+.dirrow .cnt b{color:var(--text);font-size:15px}
+.dirrow textarea{width:100%;background:var(--bg2);border:1px solid var(--line);color:var(--text);
+  border-radius:10px;padding:10px;font-size:15px;resize:none;font-family:inherit}
+.dirrow.unset textarea{border-color:#5a3a3a}
+.dirrow .warn{font-size:11px;color:#ff8a84;margin-top:3px}
+nav{position:fixed;left:0;right:0;bottom:0;background:rgba(11,14,26,.92);backdrop-filter:blur(10px);
+  border-top:1px solid var(--line);display:flex;justify-content:center;z-index:40}
+nav .inner{max-width:560px;width:100%;display:flex}
+nav button{flex:1;background:none;border:none;color:var(--muted);padding:10px 0 calc(10px + env(safe-area-inset-bottom));
+  font-size:11px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px}
+nav button .ic{font-size:19px}
+nav button.sel{color:var(--gold)}
+#stampfx{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:80;pointer-events:none}
+#stampfx .st{width:150px;height:150px;border-radius:50%;border:7px solid var(--red);color:var(--red);
+  display:flex;align-items:center;justify-content:center;font-size:56px;font-weight:800;background:rgba(255,95,87,.06)}
+#stampfx.show{display:flex}
+#stampfx.show .st{animation:stampin .45s cubic-bezier(.2,2.2,.4,1)}
+@keyframes stampin{0%{transform:scale(2.6) rotate(-30deg);opacity:0}55%{transform:scale(.92) rotate(-10deg);opacity:1}100%{transform:scale(1) rotate(-12deg)}}
+#titlefx{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:90;
+  background:rgba(4,5,12,.86);padding:24px}
+#titlefx.show{display:flex}
+#titlefx .box{text-align:center;animation:fade .3s ease;max-width:340px}
+#titlefx .cap{font-size:12px;letter-spacing:.4em;color:var(--muted)}
+#titlefx .mark{width:110px;height:110px;margin:18px auto;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:46px;border:5px solid var(--gold);color:var(--gold);transform:rotate(-8deg);box-shadow:0 0 44px rgba(232,179,75,.45)}
+#titlefx .nm{font-size:25px;color:var(--gold)}
+#titlefx .hint{font-size:13px;color:var(--muted);margin-top:8px;line-height:1.6}
+#titlefx button{margin-top:22px;background:var(--gold);color:#1a1405;border:none;border-radius:999px;
+  padding:12px 34px;font-size:15px;font-weight:700;cursor:pointer}
+#intro{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:95;background:rgba(4,5,12,.9);padding:24px}
+#intro.show{display:flex}
+#intro .box{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:26px 22px;max-width:380px;text-align:center}
+#intro h2{margin:0 0 6px;font-size:21px;letter-spacing:.1em}
+#intro p{font-size:14px;line-height:1.9;color:var(--muted);text-align:left}
+#intro p b{color:var(--text)}
+#intro .core{color:var(--gold);font-size:16px;text-align:center;margin:14px 0}
+#intro button{background:var(--gold);color:#1a1405;border:none;border-radius:999px;padding:13px 36px;font-size:16px;font-weight:700;cursor:pointer}
+.danger{margin-top:26px;text-align:center}
+.danger button{background:none;border:1px solid #5a3a3a;color:#ff8a84;border-radius:10px;padding:9px 18px;font-size:12px;cursor:pointer}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div><h1>作戦手帳</h1><div class="sub">REAL STATUS</div></div>
+    <div class="streak" id="streak">🔥 0日連続</div>
+  </header>
+
+  <!-- ステータス -->
+  <section class="view active" id="v-status">
+    <div class="card bigtitle">
+      <div class="label">現在の称号</div>
+      <div class="name serif" id="curTitle">無名の作戦家</div>
+      <div class="date" id="curTitleDate">最初の作戦を完了しよう</div>
+    </div>
+    <div class="card">
+      <h2>ステータス（自己申告制・盛れない数字だけが育つ）</h2>
+      <div class="radarwrap"><svg id="radar" width="250" height="230" viewBox="0 0 250 230"></svg></div>
+      <div class="params" id="params"></div>
+    </div>
+    <div class="card">
+      <h2>今日の作戦</h2>
+      <div id="todayList"></div>
+    </div>
+  </section>
+
+  <!-- 作戦メモ -->
+  <section class="view" id="v-mission">
+    <div class="card">
+      <h2>作戦を立てる</h2>
+      <div class="addform">
+        <input type="text" id="mText" placeholder="例：金曜19時に誘いの文面を送る" maxlength="80">
+        <div class="fieldrow" id="mFields"></div>
+        <input type="date" id="mDate">
+        <button class="addbtn" id="mAdd">作戦を追加</button>
+      </div>
+    </div>
+    <div class="secttl">今日の作戦</div><div id="listToday"></div>
+    <div class="secttl">明日以降</div><div id="listFuture"></div>
+    <div class="secttl">完了した作戦</div><div id="listDone"></div>
+  </section>
+
+  <!-- レッテル帳 -->
+  <section class="view" id="v-titles">
+    <div class="progress" id="titleProgress"></div>
+    <div class="grid" id="titleGrid"></div>
+  </section>
+
+  <!-- 人生計画表 -->
+  <section class="view" id="v-plan">
+    <div class="card">
+      <h2>人生計画表 ― 方向を選ぶ</h2>
+      <div style="font-size:13px;color:var(--muted);line-height:1.7">分野ごとに「方向」を1行で書く。伸びていない分野は、そのままここに見える。書き換えはいつでも自由。</div>
+      <div id="dirList"></div>
+    </div>
+    <div class="danger"><button id="resetBtn">データを全て初期化</button></div>
+  </section>
+</div>
+
+<nav><div class="inner">
+  <button data-v="v-status" class="sel"><span class="ic">📊</span>ステータス</button>
+  <button data-v="v-mission"><span class="ic">📝</span>作戦メモ</button>
+  <button data-v="v-titles"><span class="ic">🏅</span>レッテル帳</button>
+  <button data-v="v-plan"><span class="ic">🧭</span>計画表</button>
+</div></nav>
+
+<div id="stampfx"><div class="st" id="stampChar">済</div></div>
+
+<div id="titlefx"><div class="box">
+  <div class="cap">称号取得</div>
+  <div class="mark" id="tfMark">作</div>
+  <div class="nm serif" id="tfName"></div>
+  <div class="hint" id="tfHint"></div>
+  <button id="tfClose">受け取る</button>
+</div></div>
+
+<div id="intro"><div class="box">
+  <h2 class="serif">作戦手帳</h2>
+  <p>計画を立てて、やったらスタンプ。称号が溜まって、自分のステータスが育つ、<b>本気の人生計画表</b>。</p>
+  <p>このアプリは<b>自己申告制</b>です。証拠の提出も、連携も、確認もありません。</p>
+  <p class="core serif">申告は自由。<br>盛ったステータスで生きるのも自分。</p>
+  <button id="introOk">方向を選んで始める</button>
+</div></div>
+
+<script>
+"use strict";
+const FIELDS=[
+ {id:"body",name:"体力",kanji:"体",color:"#57d977"},
+ {id:"study",name:"知力",kanji:"知",color:"#4f7cff"},
+ {id:"charm",name:"魅力",kanji:"魅",color:"#ff6ee7"},
+ {id:"work",name:"仕事",kanji:"仕",color:"#e8b34b"},
+ {id:"money",name:"金",kanji:"金",color:"#ffd257"},
+ {id:"relation",name:"人間関係",kanji:"人",color:"#4fd8c7"},
+];
+const F=id=>FIELDS.find(f=>f.id===id);
+/* 称号マスタ30種: typeで判定 */
+const TITLES=[
+ {id:"t01",name:"最初の一歩",mark:"歩",rare:"normal",hint:"作戦を1つ完了する",type:"total",n:1},
+ {id:"t02",name:"作戦家のはじまり",mark:"作",rare:"normal",hint:"作戦を10個立てる",type:"created",n:10},
+ {id:"t03",name:"計画立てるの好き",mark:"計",rare:"silver",hint:"作戦を50個立てる",type:"created",n:50},
+ {id:"t04",name:"作戦立案の鬼",mark:"鬼",rare:"gold",hint:"作戦を200個立てる",type:"created",n:200},
+ {id:"t05",name:"二桁の遂行者",mark:"十",rare:"normal",hint:"作戦を10個完了する",type:"total",n:10},
+ {id:"t06",name:"五十戦の作戦家",mark:"五",rare:"silver",hint:"作戦を50個完了する",type:"total",n:50},
+ {id:"t07",name:"百戦錬磨",mark:"百",rare:"gold",hint:"作戦を100個完了する",type:"total",n:100},
+ {id:"t08",name:"三百の到達者",mark:"到",rare:"gold",hint:"作戦を300個完了する",type:"total",n:300},
+ {id:"t09",name:"3日坊主・卒業",mark:"卒",rare:"normal",hint:"3日連続で作戦を完了する",type:"streak",n:3},
+ {id:"t10",name:"一週間の男",mark:"週",rare:"silver",hint:"7日連続で作戦を完了する",type:"streak",n:7},
+ {id:"t11",name:"三十日の壁・突破者",mark:"壁",rare:"gold",hint:"30日連続で作戦を完了する",type:"streak",n:30},
+ {id:"t12",name:"百日継続の化身",mark:"化",rare:"rainbow",hint:"100日連続で作戦を完了する",type:"streak",n:100},
+ {id:"t13",name:"鍛える者",mark:"鍛",rare:"normal",hint:"体力の作戦を10個完了する",type:"field",field:"body",n:10},
+ {id:"t14",name:"学ぶ者",mark:"学",rare:"normal",hint:"知力の作戦を10個完了する",type:"field",field:"study",n:10},
+ {id:"t15",name:"魅せる者",mark:"魅",rare:"normal",hint:"魅力の作戦を10個完了する",type:"field",field:"charm",n:10},
+ {id:"t16",name:"働く者",mark:"働",rare:"normal",hint:"仕事の作戦を10個完了する",type:"field",field:"work",n:10},
+ {id:"t17",name:"貯める者",mark:"貯",rare:"normal",hint:"金の作戦を10個完了する",type:"field",field:"money",n:10},
+ {id:"t18",name:"繋ぐ者",mark:"繋",rare:"normal",hint:"人間関係の作戦を10個完了する",type:"field",field:"relation",n:10},
+ {id:"t19",name:"恋愛作戦 実行者",mark:"恋",rare:"silver",hint:"魅力＋人間関係の作戦を合わせて20個完了する",type:"love",n:20},
+ {id:"t20",name:"六角形の男",mark:"六",rare:"silver",hint:"全分野を10以上にする",type:"allfield",n:10},
+ {id:"t21",name:"完全六角形",mark:"全",rare:"gold",hint:"全分野を30以上にする",type:"allfield",n:30},
+ {id:"t22",name:"朝型の王",mark:"朝",rare:"silver",hint:"午前6時前に作戦を10個完了する",type:"early",n:10},
+ {id:"t23",name:"夜型の王",mark:"夜",rare:"normal",hint:"23時以降に作戦を10個完了する",type:"night",n:10},
+ {id:"t24",name:"週末の作戦家",mark:"末",rare:"normal",hint:"土日に作戦を10個完了する",type:"weekend",n:10},
+ {id:"t25",name:"猛攻の日",mark:"猛",rare:"normal",hint:"1日に作戦を5個完了する",type:"perday",n:5},
+ {id:"t26",name:"帰ってきた作戦家",mark:"帰",rare:"silver",hint:"7日以上空けて作戦を完了する",type:"comeback",n:7},
+ {id:"t27",name:"計画倒れの帝王",mark:"帝",rare:"normal",hint:"未完了の作戦が10個溜まる",type:"pending",n:10},
+ {id:"t28",name:"大衆に飲まれ中",mark:"衆",rare:"normal",hint:"方向が未設定の分野が3つ以上ある",type:"unset",n:3},
+ {id:"t29",name:"方向を定めた者",mark:"定",rare:"silver",hint:"全分野に方向を設定する",type:"allset",n:6},
+ {id:"t30",name:"自分の人生の主人公",mark:"主",rare:"rainbow",hint:"作戦を500個完了する",type:"total",n:500},
+];
+const KEY="realStatusV1";
+let S=load();
+function load(){
+  try{const s=JSON.parse(localStorage.getItem(KEY)); if(s&&s.missions) return s;}catch(e){}
+  return {directions:{},missions:[],stampLog:[],unlocked:{},totalCreated:0,introSeen:false};
+}
+function save(){localStorage.setItem(KEY,JSON.stringify(S));}
+const todayStr=(d=new Date())=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+const counts=()=>{const c={};FIELDS.forEach(f=>c[f.id]=0);S.stampLog.forEach(l=>{if(c[l.field]!==undefined)c[l.field]++;});return c;};
+function streak(){
+  const days=new Set(S.stampLog.map(l=>l.date)); if(!days.size)return 0;
+  let n=0;const d=new Date();
+  if(!days.has(todayStr(d))) d.setDate(d.getDate()-1);
+  while(days.has(todayStr(d))){n++;d.setDate(d.getDate()-1);}
+  return n;
+}
+function maxStreak(){
+  const days=[...new Set(S.stampLog.map(l=>l.date))].sort(); let best=0,cur=0,prev=null;
+  for(const ds of days){ if(prev){const p=new Date(prev);p.setDate(p.getDate()+1); cur=(todayStr(p)===ds)?cur+1:1;}else cur=1; best=Math.max(best,cur); prev=ds; }
+  return best;
+}
+function stats(){
+  const c=counts();
+  const perDay={}; S.stampLog.forEach(l=>perDay[l.date]=(perDay[l.date]||0)+1);
+  const days=[...new Set(S.stampLog.map(l=>l.date))].sort();
+  let gap=0; for(let i=1;i<days.length;i++){gap=Math.max(gap,(new Date(days[i])-new Date(days[i-1]))/86400000);}
+  return {
+    total:S.stampLog.length, created:S.totalCreated, counts:c,
+    streak:maxStreak(),
+    love:(c.charm||0)+(c.relation||0),
+    allfield:Math.min(...FIELDS.map(f=>c[f.id])),
+    early:S.stampLog.filter(l=>new Date(l.at).getHours()<6).length,
+    night:S.stampLog.filter(l=>new Date(l.at).getHours()>=23).length,
+    weekend:S.stampLog.filter(l=>{const w=new Date(l.at).getDay();return w===0||w===6;}).length,
+    perday:Math.max(0,...Object.values(perDay)),
+    comeback:gap, pending:S.missions.filter(m=>!m.doneAt).length,
+    unset:FIELDS.filter(f=>!(S.directions[f.id]||"").trim()).length,
+    allset:FIELDS.filter(f=>(S.directions[f.id]||"").trim()).length,
+  };
+}
+function titleMet(t,st){
+  switch(t.type){
+    case "total":return st.total>=t.n; case "created":return st.created>=t.n;
+    case "streak":return st.streak>=t.n; case "field":return (st.counts[t.field]||0)>=t.n;
+    case "love":return st.love>=t.n; case "allfield":return st.allfield>=t.n;
+    case "early":return st.early>=t.n; case "night":return st.night>=t.n;
+    case "weekend":return st.weekend>=t.n; case "perday":return st.perday>=t.n;
+    case "comeback":return st.comeback>=t.n; case "pending":return st.pending>=t.n;
+    case "unset":return st.unset>=t.n; case "allset":return st.allset>=t.n;
+  } return false;
+}
+let unlockQueue=[];
+function checkTitles(celebrate){
+  const st=stats(); const fresh=[];
+  for(const t of TITLES){
+    if(!S.unlocked[t.id]&&titleMet(t,st)){S.unlocked[t.id]=Date.now();fresh.push(t);}
+    if(S.unlocked[t.id]&&!titleMet(t,st)&& (t.type==="pending"||t.type==="unset")){/* 状態系は取得済みを保持 */}
+  }
+  if(fresh.length){save(); if(celebrate){unlockQueue.push(...fresh);showNextUnlock();}}
+  return fresh;
+}
+function showNextUnlock(){
+  const t=unlockQueue.shift(); if(!t)return;
+  document.getElementById("tfMark").textContent=t.mark;
+  document.getElementById("tfName").textContent=t.name;
+  document.getElementById("tfHint").textContent=t.hint;
+  const m=document.querySelector("#titlefx .mark");
+  m.style.borderColor=t.rare==="gold"?"#e8b34b":t.rare==="rainbow"?"#ff8ab5":t.rare==="silver"?"#c9cede":"#9aa3c7";
+  m.style.color=m.style.borderColor;
+  document.getElementById("titlefx").classList.add("show");
+  if(navigator.vibrate)navigator.vibrate([30,50,30]);
+}
+document.getElementById("tfClose").onclick=()=>{
+  document.getElementById("titlefx").classList.remove("show");
+  if(unlockQueue.length)setTimeout(showNextUnlock,250); else render();
+};
+/* 描画 */
+const $=id=>document.getElementById(id);
+function radarSVG(){
+  const c=counts(); const cx=125,cy=112,R=82;
+  const max=Math.max(10,...Object.values(c));
+  const pt=(i,v)=>{const a=-Math.PI/2+i*Math.PI/3;const r=R*v;return [cx+r*Math.cos(a),cy+r*Math.sin(a)];};
+  let s="";
+  [0.33,0.66,1].forEach(k=>{s+='<polygon points="'+FIELDS.map((f,i)=>pt(i,k).join(",")).join(" ")+'" fill="none" stroke="#2a3160" stroke-width="1"/>';});
+  FIELDS.forEach((f,i)=>{const[x,y]=pt(i,1);s+='<line x1="'+cx+'" y1="'+cy+'" x2="'+x+'" y2="'+y+'" stroke="#2a3160"/>';});
+  s+='<polygon points="'+FIELDS.map((f,i)=>pt(i,Math.max(0.03,c[f.id]/max)).join(",")).join(" ")+'" fill="rgba(232,179,75,.28)" stroke="#e8b34b" stroke-width="2"/>';
+  FIELDS.forEach((f,i)=>{const[x,y]=pt(i,Math.max(0.03,c[f.id]/max));s+='<circle cx="'+x+'" cy="'+y+'" r="3.5" fill="'+f.color+'"/>';});
+  FIELDS.forEach((f,i)=>{const[x,y]=pt(i,1.22);s+='<text x="'+x+'" y="'+(y+4)+'" font-size="12" fill="#9aa3c7" text-anchor="middle">'+f.name+'</text>';});
+  $("radar").innerHTML=s;
+}
+function missionEl(m,showStamp){
+  const f=F(m.field); const div=document.createElement("div");
+  div.className="mission"+(m.doneAt?" done":"");
+  div.innerHTML='<div class="f" style="border-color:'+f.color+';color:'+f.color+'">'+f.kanji+'</div>'+
+    '<div class="t">'+escapeHtml(m.text)+'<small>'+f.name+" ・ "+m.date+"</small></div>";
+  if(m.doneAt){const d=document.createElement("div");d.className="done-mark";d.textContent="済";div.appendChild(d);}
+  else if(showStamp){const b=document.createElement("button");b.className="stampbtn";b.textContent="完了";b.onclick=()=>completeMission(m.id);div.appendChild(b);}
+  const del=document.createElement("button");del.className="delbtn";del.textContent="✕";del.title="削除";
+  del.onclick=()=>{if(confirm("この作戦を削除しますか？")){S.missions=S.missions.filter(x=>x.id!==m.id);save();checkTitles(false);render();}};
+  div.appendChild(del); return div;
+}
+function escapeHtml(s){return s.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+function fillList(el,arr,showStamp){
+  el.innerHTML=""; if(!arr.length){el.innerHTML='<div class="empty">まだありません</div>';return;}
+  arr.forEach(m=>el.appendChild(missionEl(m,showStamp)));
+}
+function render(){
+  $("streak").textContent="🔥 "+streak()+"日連続";
+  const st=stats(); const c=st.counts;
+  /* 現在の称号 = 最後に取得したもの */
+  let cur=null,curAt=0;
+  for(const t of TITLES){if(S.unlocked[t.id]&&S.unlocked[t.id]>=curAt){cur=t;curAt=S.unlocked[t.id];}}
+  $("curTitle").textContent=cur?cur.name:"無名の作戦家";
+  $("curTitleDate").textContent=cur?("取得："+new Date(curAt).toLocaleDateString("ja-JP")):"最初の作戦を完了しよう";
+  radarSVG();
+  $("params").innerHTML=FIELDS.map(f=>'<div class="param"><div class="kanji" style="color:'+f.color+'">'+f.kanji+" "+f.name+'</div><div class="val">'+c[f.id]+'</div><div class="lv">Lv '+Math.floor(Math.sqrt(c[f.id]))+"</div></div>").join("");
+  const ts=todayStr();
+  const todays=S.missions.filter(m=>m.date===ts);
+  fillList($("todayList"),todays,true);
+  fillList($("listToday"),todays,true);
+  fillList($("listFuture"),S.missions.filter(m=>m.date>ts&&!m.doneAt).sort((a,b)=>a.date<b.date?-1:1),true);
+  fillList($("listDone"),S.missions.filter(m=>m.doneAt).sort((a,b)=>b.doneAt-a.doneAt),false);
+  /* 称号 */
+  const un=TITLES.filter(t=>S.unlocked[t.id]).length;
+  $("titleProgress").innerHTML="レッテル帳 <b>"+un+"</b> / "+TITLES.length;
+  $("titleGrid").innerHTML=TITLES.map(t=>{
+    const u=S.unlocked[t.id];
+    return '<div class="title '+(u?"r-"+t.rare:"locked")+'"><div class="mark">'+(u?t.mark:"？")+'</div><div class="nm">'+(u?t.name:t.hint)+'</div>'+(u?'<div class="dt">'+new Date(u).toLocaleDateString("ja-JP")+"</div>":"")+"</div>";
+  }).join("");
+  /* 計画表 */
+  $("dirList").innerHTML="";
+  FIELDS.forEach(f=>{
+    const row=document.createElement("div"); row.className="dirrow"+((S.directions[f.id]||"").trim()?"":" unset");
+    row.innerHTML='<div class="head"><div class="f" style="border-color:'+f.color+';color:'+f.color+'">'+f.kanji+'</div><div class="fname">'+f.name+'</div><div class="cnt">完了 <b>'+c[f.id]+"</b> 回</div></div>";
+    const ta=document.createElement("textarea"); ta.rows=1; ta.maxLength=60; ta.placeholder="方向を1行で書く（未設定）";
+    ta.value=S.directions[f.id]||"";
+    ta.onchange=()=>{S.directions[f.id]=ta.value.trim();save();checkTitles(true);render();};
+    row.appendChild(ta);
+    if(!(S.directions[f.id]||"").trim()){const w=document.createElement("div");w.className="warn";w.textContent="方向未設定 ― 飲まれる側";row.appendChild(w);}
+    $("dirList").appendChild(row);
+  });
+}
+/* 作戦追加 */
+let selField="body";
+function renderFieldChips(){
+  $("mFields").innerHTML="";
+  FIELDS.forEach(f=>{
+    const b=document.createElement("button"); b.type="button";
+    b.className="fieldchip"+(selField===f.id?" sel":""); b.textContent=f.kanji+" "+f.name;
+    if(selField===f.id){b.style.borderColor=f.color;}
+    b.onclick=()=>{selField=f.id;renderFieldChips();};
+    $("mFields").appendChild(b);
+  });
+}
+$("mAdd").onclick=()=>{
+  const text=$("mText").value.trim(); if(!text){$("mText").focus();return;}
+  const date=$("mDate").value||todayStr();
+  S.missions.push({id:Date.now()+"_"+Math.random().toString(36).slice(2,7),text,field:selField,date,doneAt:null});
+  S.totalCreated++; $("mText").value=""; save(); checkTitles(true); render();
+};
+function completeMission(id){
+  const m=S.missions.find(x=>x.id===id); if(!m||m.doneAt)return;
+  m.doneAt=Date.now();
+  S.stampLog.push({missionId:id,field:m.field,at:Date.now(),date:todayStr()});
+  save();
+  /* スタンプ演出 */
+  $("stampChar").textContent=F(m.field).kanji;
+  const fx=$("stampfx"); fx.classList.remove("show"); void fx.offsetWidth; fx.classList.add("show");
+  if(navigator.vibrate)navigator.vibrate(40);
+  try{const ctx=new (window.AudioContext||window.webkitAudioContext)();const o=ctx.createOscillator(),g=ctx.createGain();
+    o.type="sine";o.frequency.setValueAtTime(150,ctx.currentTime);o.frequency.exponentialRampToValueAtTime(55,ctx.currentTime+0.12);
+    g.gain.setValueAtTime(0.25,ctx.currentTime);g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.16);
+    o.connect(g);g.connect(ctx.destination);o.start();o.stop(ctx.currentTime+0.17);}catch(e){}
+  setTimeout(()=>{fx.classList.remove("show"); checkTitles(true); render();},520);
+}
+/* タブ */
+document.querySelectorAll("nav button").forEach(b=>{
+  b.onclick=()=>{
+    document.querySelectorAll("nav button").forEach(x=>x.classList.remove("sel")); b.classList.add("sel");
+    document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
+    $(b.dataset.v).classList.add("active"); window.scrollTo(0,0);
+  };
+});
+$("resetBtn").onclick=()=>{if(confirm("全データを初期化します。本当によいですか？")){localStorage.removeItem(KEY);S=load();save();render();}};
+$("introOk").onclick=()=>{S.introSeen=true;save();$("intro").classList.remove("show");
+  document.querySelector('nav button[data-v="v-plan"]').click();};
+/* 初期化 */
+$("mDate").value=todayStr();
+renderFieldChips();
+checkTitles(false);
+render();
+if(!S.introSeen)$("intro").classList.add("show");
+</script>
+</body>
+</html>
