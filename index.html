@@ -188,7 +188,7 @@ nav button.sel{color:var(--gold)}
       <div class="traits" id="charaTraits"></div>
       <div class="nextbar"><i id="charaNextBar" style="width:0%"></i></div>
       <div class="nextcap" id="charaNextCap"></div>
-      <button class="evoprev" id="evoPreviewBtn">▶ 進化演出を確認</button>
+      <button class="evoprev" id="evoPreviewBtn">▶ 進化演出を確認（最後まで）</button>
     </div>
     <div class="card bigtitle">
       <div class="label">現在の称号</div>
@@ -463,7 +463,7 @@ function checkStage(celebrate){
   if(S.stageSeen===undefined)S.stageSeen=si;
   if(si>S.stageSeen){ if(celebrate)evoPending={from:S.stageSeen,to:si}; S.stageSeen=si; save(); }
 }
-document.getElementById("evoClose").onclick=()=>{const fx=document.getElementById("evofx");fx.classList.remove("show","done");document.getElementById("evoStage").className="";render();};
+document.getElementById("evoClose").onclick=()=>{evoClearTimers();const fx=document.getElementById("evofx");fx.classList.remove("show","done");document.getElementById("evoStage").className="";render();};
 function fanfare(){
   try{
     const ctx=new (window.AudioContext||window.webkitAudioContext)();
@@ -477,24 +477,24 @@ function fanfare(){
     });
   }catch(e){}
 }
-function showEvoIfPending(){
-  if(!evoPending)return;
-  if(document.getElementById("titlefx").classList.contains("show"))return;
-  const from=evoPending.from, si=evoPending.to; evoPending=null;
+let evoTimers=[];
+function evoLater(fn,ms){evoTimers.push(setTimeout(fn,ms));}
+function evoClearTimers(){evoTimers.forEach(clearTimeout);evoTimers=[];}
+function runEvoSequence(from,to,onFinish){
   const fx=document.getElementById("evofx"), stage=document.getElementById("evoStage");
   const oldImg=document.getElementById("evoOld"), newImg=document.getElementById("evoNew");
-  fx.classList.remove("done"); stage.className=""; 
-  oldImg.src="stage"+from+".webp"; newImg.src="stage"+si+".webp";
+  fx.classList.remove("done"); stage.className="";
+  oldImg.src="stage"+from+".webp"; newImg.src="stage"+to+".webp";
   document.getElementById("evoCap").textContent="進化";
-  document.getElementById("evoName").textContent=STAGES[si].name;
-  document.getElementById("evoHint").textContent=STAGES[si].hint;
+  document.getElementById("evoName").textContent=STAGES[to].name;
+  document.getElementById("evoHint").textContent=STAGES[to].hint;
   document.getElementById("evoSparks").innerHTML="";
   fx.classList.add("show");
   if(navigator.vibrate)navigator.vibrate(30);
-  setTimeout(()=>{ stage.classList.add("shake"); if(navigator.vibrate)navigator.vibrate([20,40,20,40,20]); },650);
-  setTimeout(()=>{ stage.classList.add("flashgo"); },1250);
-  setTimeout(()=>{ stage.classList.add("flashout"); },1400);
-  setTimeout(()=>{
+  evoLater(()=>{ stage.classList.add("shake"); if(navigator.vibrate)navigator.vibrate([20,40,20,40,20]); },650);
+  evoLater(()=>{ stage.classList.add("flashgo"); },1250);
+  evoLater(()=>{ stage.classList.add("flashout"); },1400);
+  evoLater(()=>{
     stage.classList.add("reveal"); fanfare();
     if(navigator.vibrate)navigator.vibrate([50,60,120]);
     const box=document.getElementById("evoSparks");
@@ -507,7 +507,28 @@ function showEvoIfPending(){
       box.appendChild(sp);
     }
   },1750);
-  setTimeout(()=>{ fx.classList.add("done"); },2150);
+  evoLater(()=>{ fx.classList.add("done"); if(onFinish)onFinish(); },2250);
+}
+function showEvoIfPending(){
+  if(!evoPending)return;
+  if(document.getElementById("titlefx").classList.contains("show"))return;
+  const from=evoPending.from, si=evoPending.to; evoPending=null;
+  runEvoSequence(from,si,null);
+}
+function playEvoChain(){
+  if(document.getElementById("titlefx").classList.contains("show"))return;
+  const si=stageIdx(S.stampLog.length);
+  const pairs=[];
+  if(si>=STAGES.length-1){pairs.push([STAGES.length-2,STAGES.length-1]);}
+  else{for(let i=si;i<STAGES.length-1;i++)pairs.push([i,i+1]);}
+  let idx=0;
+  const next=()=>{
+    if(idx>=pairs.length)return;
+    const pr=pairs[idx]; idx++;
+    const isLast=idx>=pairs.length;
+    runEvoSequence(pr[0],pr[1],isLast?null:()=>{ evoLater(()=>{ document.getElementById("evofx").classList.remove("done"); next(); },700); });
+  };
+  next();
 }
 /* 描画 */
 const $=id=>document.getElementById(id);
@@ -644,12 +665,7 @@ function completeMission(id){
     o.connect(g);g.connect(ctx.destination);o.start();o.stop(ctx.currentTime+0.17);}catch(e){}
   setTimeout(()=>{fx.classList.remove("show"); checkTitles(true); checkStage(true); render(); animateRadar(beforeCounts); if(!unlockQueue.length&&!document.getElementById("titlefx").classList.contains("show"))showEvoIfPending();},520);
 }
-$("evoPreviewBtn").onclick=(e)=>{
-  e.stopPropagation();
-  const si=stageIdx(S.stampLog.length);
-  const to=si<STAGES.length-1?si+1:si, from=si<STAGES.length-1?si:si-1;
-  evoPending={from,to}; showEvoIfPending();
-};
+$("evoPreviewBtn").onclick=(e)=>{ e.stopPropagation(); playEvoChain(); };
 $("charaCard").onclick=()=>{$("radarCard").scrollIntoView({behavior:"smooth",block:"center"});};
 /* タブ */
 document.querySelectorAll("nav button").forEach(b=>{
