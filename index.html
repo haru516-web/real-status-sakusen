@@ -157,6 +157,9 @@ nav button.sel{color:var(--gold)}
 .nextbar{height:8px;background:var(--bg2);border-radius:99px;margin:10px 4px 4px;overflow:hidden}
 .nextbar i{display:block;height:100%;background:var(--gold);border-radius:99px;transition:width .6s ease}
 .nextcap{font-size:11px;color:var(--muted)}
+.evoprev{display:block;margin:12px auto 2px;background:none;border:1px solid var(--gold);color:var(--gold);
+  border-radius:999px;padding:9px 20px;font-size:13px;cursor:pointer}
+.evoprev:active{transform:scale(.96)}
 #evofx{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:92;background:rgba(4,5,12,.88);padding:24px}
 #evofx.show{display:flex}
 #evofx .box{text-align:center;animation:fade .3s ease;max-width:340px}
@@ -185,6 +188,7 @@ nav button.sel{color:var(--gold)}
       <div class="traits" id="charaTraits"></div>
       <div class="nextbar"><i id="charaNextBar" style="width:0%"></i></div>
       <div class="nextcap" id="charaNextCap"></div>
+      <button class="evoprev" id="evoPreviewBtn">▶ 進化演出を確認</button>
     </div>
     <div class="card bigtitle">
       <div class="label">現在の称号</div>
@@ -640,6 +644,12 @@ function completeMission(id){
     o.connect(g);g.connect(ctx.destination);o.start();o.stop(ctx.currentTime+0.17);}catch(e){}
   setTimeout(()=>{fx.classList.remove("show"); checkTitles(true); checkStage(true); render(); animateRadar(beforeCounts); if(!unlockQueue.length&&!document.getElementById("titlefx").classList.contains("show"))showEvoIfPending();},520);
 }
+$("evoPreviewBtn").onclick=(e)=>{
+  e.stopPropagation();
+  const si=stageIdx(S.stampLog.length);
+  const to=si<STAGES.length-1?si+1:si, from=si<STAGES.length-1?si:si-1;
+  evoPending={from,to}; showEvoIfPending();
+};
 $("charaCard").onclick=()=>{$("radarCard").scrollIntoView({behavior:"smooth",block:"center"});};
 /* タブ */
 document.querySelectorAll("nav button").forEach(b=>{
