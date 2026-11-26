@@ -540,7 +540,11 @@ function missionEl(m,showStamp){
   if(m.doneAt){const d=document.createElement("div");d.className="done-mark";d.textContent="済";div.appendChild(d);}
   else if(showStamp){const b=document.createElement("button");b.className="stampbtn";b.textContent="完了";b.onclick=()=>completeMission(m.id);div.appendChild(b);}
   const del=document.createElement("button");del.className="delbtn";del.textContent="✕";del.title="削除";
-  del.onclick=()=>{if(confirm("この作戦を削除しますか？")){S.missions=S.missions.filter(x=>x.id!==m.id);save();checkTitles(false);render();}};
+  del.onclick=()=>{
+    if(del.dataset.armed){S.missions=S.missions.filter(x=>x.id!==m.id);save();checkTitles(false);render();}
+    else{del.dataset.armed="1";del.textContent="削除？";del.style.color="#ff8a84";
+      setTimeout(()=>{del.dataset.armed="";del.textContent="✕";del.style.color="";},2600);}
+  };
   div.appendChild(del); return div;
 }
 function escapeHtml(s){return s.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
@@ -645,7 +649,12 @@ document.querySelectorAll("nav button").forEach(b=>{
     $(b.dataset.v).classList.add("active"); window.scrollTo(0,0);
   };
 });
-$("resetBtn").onclick=()=>{if(confirm("全データを初期化します。本当によいですか？")){localStorage.removeItem(KEY);S=load();save();render();}};
+$("resetBtn").onclick=()=>{
+  const b=$("resetBtn");
+  if(b.dataset.armed){localStorage.removeItem(KEY);S=load();S.introSeen=true;save();b.dataset.armed="";b.textContent="データを全て初期化";checkTitles(false);checkStage(false);render();}
+  else{b.dataset.armed="1";b.textContent="本当に初期化しますか？ もう一度タップで実行";
+    setTimeout(()=>{b.dataset.armed="";b.textContent="データを全て初期化";},3200);}
+};
 $("introOk").onclick=()=>{S.introSeen=true;save();$("intro").classList.remove("show");
   document.querySelector('nav button[data-v="v-plan"]').click();};
 /* 初期化 */
