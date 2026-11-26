@@ -169,6 +169,39 @@ nav button.sel{color:var(--gold)}
 #evofx button{margin-top:20px;background:var(--gold);color:#1a1405;border:none;border-radius:999px;padding:12px 34px;font-size:15px;font-weight:700;cursor:pointer}
 .danger{margin-top:26px;text-align:center}
 .danger button{background:none;border:1px solid #5a3a3a;color:#ff8a84;border-radius:10px;padding:9px 18px;font-size:12px;cursor:pointer}
+
+/* ===== モック風リッチUI（紺×金） ===== */
+#app{background:radial-gradient(120% 50% at 50% 0%,#1a2150 0%,var(--bg) 55%)}
+header h1{color:#f3d489}
+.card{background:linear-gradient(180deg,#171e40,#12172f);border-color:#3a4176;box-shadow:0 6px 24px rgba(0,0,0,.35);border-radius:18px}
+.card h2{color:var(--gold)}
+.param{background:#1a2148}
+.addbtn,.stampbtn,#titlefx button,#intro button,#evofx button{background:linear-gradient(180deg,#f2cd72,#d9a441)}
+.charaimg{border:2px solid rgba(232,179,75,.55)}
+.mission .f,.prop .f{background:rgba(255,255,255,.04)}
+.avatar{width:64px;height:64px;border-radius:50%;object-fit:cover;object-position:top center;border:2px solid var(--gold);flex:none;background:#0a0e22}
+.sanbohead{display:flex;gap:12px;align-items:flex-start}
+.bubble{flex:1;background:var(--bg2);border:1px solid rgba(232,179,75,.65);border-radius:14px;padding:12px 14px;font-size:14px;line-height:1.7}
+.prop{display:flex;align-items:center;gap:10px;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:12px;margin:8px 0}
+.prop .f{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;flex:none;border:2px solid}
+.prop .t{flex:1;font-size:15px;line-height:1.4}
+.prop .t small{display:block;color:var(--muted);font-size:11px;margin-top:2px}
+.prop .add{flex:none;background:linear-gradient(180deg,#f2cd72,#d9a441);color:#1a1405;border:none;border-radius:999px;padding:9px 14px;font-weight:700;font-size:13px;cursor:pointer}
+.prop .add:disabled{opacity:.45;background:var(--card);color:var(--muted);border:1px solid var(--line)}
+.goalframe{border:1.5px solid var(--gold);border-radius:14px;padding:18px 14px;text-align:center;margin-top:14px;background:radial-gradient(90% 90% at 50% 0%,rgba(232,179,75,.10),transparent)}
+.goalframe .gt{font-size:18px;color:var(--gold)}
+.goalframe .ring{margin:10px auto 2px;width:132px;height:132px}
+.goalframe .ringbg{stroke:#2a3160}
+.goalframe .ringfg{stroke:var(--gold);stroke-linecap:round;transition:stroke-dashoffset .8s ease}
+.goalframe .ringnum{font-size:34px;font-weight:800;fill:var(--text)}
+.goalframe .ringsub{font-size:12px;fill:var(--muted)}
+.wkrow{display:flex;align-items:center;gap:10px;text-align:left;background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:9px 12px;margin:7px 0;font-size:13px}
+.wkrow .st{margin-left:auto;font-size:11px;color:var(--muted);white-space:nowrap}
+.wkrow.done{border-color:var(--gold)}
+.wkrow .box{width:20px;height:20px;border-radius:6px;border:2px solid var(--line);flex:none;display:flex;align-items:center;justify-content:center;color:var(--gold);font-size:13px}
+.wkrow.done .box{border-color:var(--gold)}
+.goldbtn{display:block;width:100%;margin-top:12px;background:linear-gradient(180deg,#f2cd72,#d9a441);color:#1a1405;border:none;border-radius:12px;padding:13px;font-size:15px;font-weight:700;cursor:pointer}
+.ghostbtn{display:block;margin:12px auto 0;background:none;border:1px solid var(--line);color:var(--muted);border-radius:999px;padding:8px 18px;font-size:12px;cursor:pointer}
 </style>
 </head>
 <body>
@@ -209,6 +242,13 @@ nav button.sel{color:var(--gold)}
   <!-- 作戦メモ -->
   <section class="view" id="v-mission">
     <div class="card">
+      <h2>✦ AI作戦参謀</h2>
+      <div class="sanbohead"><img class="avatar" id="sanboFace" src="stage0.webp" alt="参謀"><div class="bubble" id="sanboMsg"></div></div>
+      <div class="secttl">今日の作戦案</div>
+      <div id="propList"></div>
+      <div style="font-size:11px;color:var(--muted);margin-top:6px">参謀の提案は目安。採るも捨てるも自由（自己申告制）。提案は毎日変わる。</div>
+    </div>
+    <div class="card">
       <h2>作戦を立てる</h2>
       <div class="addform">
         <input type="text" id="mText" placeholder="例：金曜19時に誘いの文面を送る" maxlength="80">
@@ -230,6 +270,11 @@ nav button.sel{color:var(--gold)}
 
   <!-- 人生計画表 -->
   <section class="view" id="v-plan">
+    <div class="card">
+      <h2>✦ 期間目標（今月）</h2>
+      <div class="sanbohead"><img class="avatar" id="goalFace" src="stage0.webp" alt="参謀"><div class="bubble" id="goalMsg"></div></div>
+      <div id="goalBody"></div>
+    </div>
     <div class="card">
       <h2>人生計画表 ― 方向を選ぶ</h2>
       <div style="font-size:13px;color:var(--muted);line-height:1.7">分野ごとに「方向」を1行で書く。伸びていない分野は、そのままここに見える。書き換えはいつでも自由。</div>
@@ -318,6 +363,8 @@ const TITLES=[
 ];
 const KEY="realStatusV1";
 let S=load();
+if(!S.sanbo)S.sanbo={date:"",picks:[],added:[]};
+if(!("periodGoal" in S))S.periodGoal=null;
 function load(){
   try{const s=JSON.parse(localStorage.getItem(KEY)); if(s&&s.missions) return s;}catch(e){}
   return {directions:{},missions:[],stampLog:[],unlocked:{},totalCreated:0,introSeen:false,stageSeen:0};
@@ -577,6 +624,100 @@ function fillList(el,arr,showStamp){
   el.innerHTML=""; if(!arr.length){el.innerHTML='<div class="empty">まだありません</div>';return;}
   arr.forEach(m=>el.appendChild(missionEl(m,showStamp)));
 }
+
+/* ===== AI作戦参謀（ルールベース提案） ===== */
+const PROP_BANK={
+ body:["腕立て20回","スクワット30回","15分歩く","ストレッチ5分","階段を1回使う","23時までに寝る体勢に入る"],
+ study:["本を10ページ読む","英単語を10個覚える","気になる記事を1本読む","学んだことを1行メモする","勉強タイマー15分","ノートを1ページ書く"],
+ charm:["姿勢を意識して歩く","笑顔で挨拶を3回する","身だしなみを整える","鏡で表情をチェックする","いつもと違う服の組み合わせを試す","声に出して話す練習を5分"],
+ work:["タスクを1つ終わらせる","机を5分片付ける","返信を1件済ませる","明日の準備を1つする","15分だけ集中作業","進捗を1行記録する"],
+ money:["支出を1件記録する","サブスクを1つ見直す","コンビニ出費を1回我慢する","100円貯金する","買う前に値段を1つ比べる","家計を5分眺める"],
+ relation:["近況を聞くLINEを1通送る","ありがとうを1回伝える","家族に連絡する","久しぶりの人に一言送る","相手の話を最後まで聞く","誰かを具体的に褒める"]
+};
+function daysSinceField(fid){
+  let last=null; S.stampLog.forEach(l=>{if(l.field===fid&&(!last||l.date>last))last=l.date;});
+  if(!last)return 999;
+  const a=new Date(todayStr()+"T00:00:00"), b=new Date(last+"T00:00:00");
+  return Math.round((a-b)/86400000);
+}
+function genSanbo(){
+  const ts=todayStr(); if(S.sanbo.date===ts&&S.sanbo.picks.length)return;
+  const c=counts();
+  const order=[...FIELDS].sort((a,b)=>{const d=daysSinceField(b.id)-daysSinceField(a.id); return d!==0?d:(c[a.id]-c[b.id]);});
+  const picks=order.slice(0,3).map(f=>{
+    const bank=PROP_BANK[f.id]; let hs=0; const key=ts+f.id;
+    for(let i=0;i<key.length;i++)hs=(hs*31+key.charCodeAt(i))>>>0;
+    return {field:f.id,text:bank[hs%bank.length]};
+  });
+  S.sanbo={date:ts,picks,added:[false,false,false]}; save();
+}
+function renderSanbo(){
+  genSanbo();
+  const si=stageIdx(S.stampLog.length);
+  $("sanboFace").src="stage"+si+".webp";
+  const top=S.sanbo.picks[0]; const f=F(top.field); const d=daysSinceField(top.field);
+  $("sanboMsg").textContent = d>=999 ? ("参謀より："+f.name+"はまだ手つかずだ。今日はこれでどうだ？")
+    : d>=3 ? ("参謀より："+f.name+"が"+d+"日止まっている。今日はこれでどうだ？")
+    : "参謀より：全分野よく動いている。今日は伸びしろの大きい順に選んだ。";
+  $("propList").innerHTML=S.sanbo.picks.map((pk,i)=>{
+    const ff=F(pk.field);
+    return '<div class="prop"><div class="f" style="border-color:'+ff.color+';color:'+ff.color+'">'+ff.kanji+'</div><div class="t">'+pk.text+'<small>'+ff.name+'</small></div>'
+      +(S.sanbo.added[i]?'<button class="add" disabled>追加済み</button>':'<button class="add" onclick="addProp('+i+')">＋ 作戦に追加</button>')
+      +'</div>';
+  }).join("");
+}
+function addProp(i){
+  if(S.sanbo.added[i])return;
+  const pk=S.sanbo.picks[i];
+  S.missions.push({id:Date.now()+"_"+"s"+i,text:pk.text,field:pk.field,date:todayStr(),doneAt:null});
+  S.totalCreated++; S.sanbo.added[i]=true; save(); checkTitles(true); render();
+}
+/* ===== 期間目標 ===== */
+let goalSelField="charm", goalSelTarget=15, goalClearArm=false;
+function goalPickField(fid){goalSelField=fid;renderGoal();}
+function goalPickTarget(n){goalSelTarget=n;renderGoal();}
+function goalSet(){
+  S.periodGoal={field:goalSelField,target:goalSelTarget,ym:todayStr().slice(0,7)}; goalClearArm=false; save(); render();
+}
+function goalClear(){
+  if(!goalClearArm){goalClearArm=true;renderGoal();return;}
+  S.periodGoal=null; goalClearArm=false; save(); render();
+}
+function renderGoal(){
+  const si=stageIdx(S.stampLog.length);
+  $("goalFace").src="stage"+si+".webp";
+  const ym=todayStr().slice(0,7);
+  const g=(S.periodGoal&&S.periodGoal.ym===ym)?S.periodGoal:null;
+  const body=$("goalBody");
+  if(!g){
+    $("goalMsg").textContent="参謀より：今月は何を伸ばす？分野と回数を定めれば、週ごとの小目標に割っておく。";
+    body.innerHTML='<div class="secttl">分野</div><div class="fieldrow">'
+      +FIELDS.map(f=>'<button type="button" class="fieldchip'+(goalSelField===f.id?" sel":"")+'" onclick="goalPickField(\''+f.id+'\')"'+(goalSelField===f.id?' style="border-color:'+f.color+'"':"")+'>'+f.kanji+" "+f.name+"</button>").join("")
+      +'</div><div class="secttl">今月の完了回数</div><div class="fieldrow">'
+      +[10,15,20,30].map(n=>'<button type="button" class="fieldchip'+(goalSelTarget===n?" sel":"")+'" onclick="goalPickTarget('+n+')"'+(goalSelTarget===n?' style="border-color:var(--gold)"':"")+">+"+n+" 回</button>").join("")
+      +'</div><button class="goldbtn" onclick="goalSet()">目標を定める</button>';
+    return;
+  }
+  const f=F(g.field);
+  const cur=S.stampLog.filter(l=>l.field===g.field&&l.date.slice(0,7)===ym).length;
+  const pct=Math.min(100,Math.round(cur/g.target*100));
+  const C=2*Math.PI*52, off=C*(1-Math.min(1,cur/g.target));
+  const now=new Date(); const dim=new Date(now.getFullYear(),now.getMonth()+1,0).getDate();
+  const wkCount=Math.ceil(dim/7), wkT=Math.ceil(g.target/wkCount), todayD=now.getDate();
+  let wks="";
+  for(let w=0;w<wkCount;w++){
+    const s=w*7+1, e=Math.min(dim,(w+1)*7);
+    const cnt=S.stampLog.filter(l=>{if(l.field!==g.field||l.date.slice(0,7)!==ym)return false; const d=parseInt(l.date.slice(8,10),10); return d>=s&&d<=e;}).length;
+    const done=cnt>=wkT, curWk=todayD>=s&&todayD<=e;
+    wks+='<div class="wkrow'+(done?" done":"")+'"><div class="box">'+(done?"✓":"")+'</div><div>第'+(w+1)+"週："+f.name+"の作戦を"+wkT+"回"+(curWk?"（今週）":"")+'</div><div class="st">'+(done?"達成":cnt+" / "+wkT)+"</div></div>";
+  }
+  $("goalMsg").textContent = cur>=g.target ? "参謀より：目標達成だ。よくやった。来月はもっと大きく張れる。"
+    : "参謀より：今月の目標は『"+f.name+" +"+g.target+"』に定めた。週ごとの小目標に割っておいたぞ。";
+  body.innerHTML='<div class="goalframe"><div class="gt serif">今月の目標：'+f.name+" +"+g.target+'</div>'
+    +'<svg class="ring" viewBox="0 0 132 132"><circle class="ringbg" cx="66" cy="66" r="52" fill="none" stroke-width="10"/><circle class="ringfg" cx="66" cy="66" r="52" fill="none" stroke-width="10" stroke-dasharray="'+C.toFixed(1)+'" stroke-dashoffset="'+off.toFixed(1)+'" transform="rotate(-90 66 66)"/><text class="ringnum" x="66" y="72" text-anchor="middle">'+cur+'</text><text class="ringsub" x="66" y="94" text-anchor="middle">/ '+g.target+"　達成 "+pct+"%</text></svg>"
+    +'<div class="secttl" style="text-align:left">週ごとの小目標</div>'+wks
+    +'<button class="ghostbtn" onclick="goalClear()">'+(goalClearArm?"本当に目標をやめる？（もう一度タップ）":"目標をやめる")+"</button></div>";
+}
 function render(){
   $("streak").textContent="🔥 "+streak()+"日連続";
   const st=stats(); const c=st.counts;
@@ -630,6 +771,7 @@ function render(){
     if(!(S.directions[f.id]||"").trim()){const w=document.createElement("div");w.className="warn";w.textContent="方向未設定 ― 飲まれる側";row.appendChild(w);}
     $("dirList").appendChild(row);
   });
+  renderSanbo(); renderGoal();
 }
 /* 作戦追加 */
 let selField="body";
