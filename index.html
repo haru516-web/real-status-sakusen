@@ -374,7 +374,7 @@ function render(){
   const ts=todayStr();
   const todays=S.missions.filter(m=>m.date===ts);
   fillList($("todayList"),todays,true);
-  fillList($("listToday"),todays,true);
+  fillList($("listToday"),todays.filter(m=>!m.doneAt),true);
   fillList($("listFuture"),S.missions.filter(m=>m.date>ts&&!m.doneAt).sort((a,b)=>a.date<b.date?-1:1),true);
   fillList($("listDone"),S.missions.filter(m=>m.doneAt).sort((a,b)=>b.doneAt-a.doneAt),false);
   /* 称号 */
